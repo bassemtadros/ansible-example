@@ -1,0 +1,87 @@
+---
+- name: List and power on VMs with smallest disk size
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars:
+    vcenter_server: vcenter.example.com
+    vcenter_user: user@example.com
+    datacenter_name: dc-01
+    cluster_name: cluster-01
+
+  vars_prompt:
+    - name: "VAULT_TOKEN"
+      prompt: "Enter your Vault token"
+      private: yes
+      ask_vault_pass: true
+
+  tasks:
+  - name: Get the vCenter password from Vault
+    shell: |
+      VAULT_ADDR=https://vault.example.com
+      SECRET_PATH=secret/vcenter/creds
+      curl -s -X GET -H "X-Vault-Token: $VAULT_TOKEN" "$VAULT_ADDR/v1/$SECRET_PATH" | jq -r .data.password
+    register: vcenter_password
+
+  - name: Connect to vCenter Server
+    vmware_vm_shell:
+      hostname: "{{ vcenter_server }}"
+      username: "{{ vcenter_user }}"
+      password: "{{ vcenter_password.stdout }}"
+      datacenter: "{{ datacenter_name }}"
+      validate_certs: no
+    register: vcenter_connection
+
+  - name: Get the cluster object
+    vmware_cluster_info:
+      hostname: "{{ vcenter_server }}"
+      username: "{{ vcenter_user }}"
+      password: "{{ vcenter_password.stdout }}"
+      validate_certs: no
+      name: "{{ cluster_name }}"
+      datacenter: "{{ datacenter_name }}"
+    register: cluster
+
+  - name: Get the list of powered off VMs in the cluster
+    vmware_vm_info:
+      hostname: "{{ vcenter_server }}"
+      username: "{{ vcenter_user }}"
+      password: "{{ vcenter_password.stdout }}"
+      validate_certs: no
+      datacenter: "{{ datacenter_name }}"
+      cluster: "{{ cluster.cluster.name }}"
+      power_state: poweredOff
+    register: vms
+
+  - name: Sort the list of VMs by disk size
+    set_fact:
+      vms_sorted: "{{ vms.virtual_machines | sort(attribute='disk_size_in_mb') }}"
+
+  - name: Enable logging on the smallest VMs
+    vmware_vm_logging:
+      hostname: "{{ vcenter_server }}"
+      username: "{{ vcenter_user }}"
+      password: "{{ vcenter_password.stdout }}"
+      validate_certs: no
+      vm_id: "{{ item.vm }}"
+      state: enabled
+    loop: "{{ vms_sorted[:5] }}"
+  
+  - name: Power on the smallest VMs
+    vmware_vm_power:
+      hostname: "{{ vcenter_server }}"
+      username: "{{ vcenter_user }}"
+      password: "{{ vcenter_password.stdout }}"
+      validate_certs: no
+      vm_id: "{{ item.vm }}"
+      state: poweredOn
+    loop: "{{ vms_sorted[:5] }}"
+  
+  - name: Disconnect from vCenter Server
+  vmware_vm_shell:
+    hostname: "{{ vcenter_server }}"
+    username: "{{ vcenter_user }}"
+    password: "{{ vcenter_password.stdout }}"
+    validate_certs: no
+    disconnect: true
