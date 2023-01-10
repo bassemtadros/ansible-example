@@ -22,7 +22,7 @@ Before you begin, you will need to have the following:
 3. The `vmware_cluster_info` module is used to retrieve information about the specified cluster.
 4. The `vmware_vm_info` module is used to retrieve a list of powered-off virtual machines in the cluster.
 5. The script sorts the list of virtual machines based on their disk size.
-6. It then uses the `vmware_vm_logging` and `vmware_vm_power` modules to enable logging and power on the 5 VMs with the smallest disk size.
+6. It then uses the `vmware_guest` module to enable logging and power on the 5 VMs with the smallest disk size.
 7. Finally, it uses the `vmware_vm_shell` module again to disconnect from the vCenter server.
 
 **IMPORTANT:** Please be aware that in this script, `validate_certs` is set to `no`, which means it is not validating the SSL certificate of the vCenter Server. This is a security risk, in a production environment it is recommended to use a valid certificate and set `validate_certs` to `true`.
