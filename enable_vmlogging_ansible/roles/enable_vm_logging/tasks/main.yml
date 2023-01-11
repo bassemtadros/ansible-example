@@ -1,0 +1,62 @@
+---
+# tasks file for enable_vm_logging
+- name: Get the vCenter password from Vault
+  shell: |
+    VAULT_ADDR=https://vault.example.com
+    SECRET_PATH=secret/vcenter/creds
+    curl -s -X GET -H "X-Vault-Token: $VAULT_TOKEN" "$VAULT_ADDR/v1/$SECRET_PATH" | jq -r .data.password
+  register: vcenter_password
+  failed_when: vcenter_password.rc != 0
+  ignore_errors: false
+
+- name: Get the cluster object
+  vmware_cluster_info:
+    hostname: "{{ vcenter_server }}"
+    username: "{{ vcenter_user }}"
+    password: "{{ vcenter_password }}"
+    validate_certs: no
+    cluster_name: "{{ cluster_name }}"
+    datacenter: "{{ datacenter_name }}"
+  register: cluster
+  failed_when: cluster is undefined
+
+- name: Get the list of powered off VMs in the cluster
+  vmware_vm_info:
+    hostname: "{{ vcenter_server }}"
+    username: "{{ vcenter_user }}"
+    password: "{{ vcenter_password }}"
+    validate_certs: no
+    datacenter: "{{ datacenter_name }}"
+    cluster: "{{ cluster.cluster.name }}"
+    power_state: poweredOff
+  register: vms
+  failed_when: vms is undefined
+
+- name: Sort the list of VMs by disk size
+  set_fact:
+    vms_sorted: "{{ vms.virtual_machines | sort(attribute='disk_size_in_mb') }}"
+  failed_when: vms_sorted is undefined
+
+- name: Enable logging for a vm
+  vmware_guest:
+    hostname: "{{ vcenter_hostname }}"
+    username: "{{ vcenter_username }}"
+    password: "{{ vcenter_password }}"
+    validate_certs: no
+    name: "{{ item.vm }}"
+    state: present
+    logging:
+      enabled: true
+  loop: "{{ vms_sorted[:5] }}"
+  failed_when: item.state != 'present'
+
+- name: Power on the smallest VMs
+  vmware_guest:
+    hostname: "{{ vcenter_server }}"
+    username: "{{ vcenter_user }}"
+    password: "{{ vcenter_password }}"
+    validate_certs: no
+    vm_id: "{{ item.vm }}"
+    state: poweredOn
+  loop: "{{ vms_sorted[:5] }}"
+  failed_when: item.state != 'poweredOn'

@@ -1,0 +1,6 @@
+---
+# vars file for enable_vm_logging
+vcenter_server: "vmvcenteruat.example.com"
+vcenter_user: "vmuseruat"
+datacenter_name: "dc"
+cluster_name: "cls.SRV.Linux"

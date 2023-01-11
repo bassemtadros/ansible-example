@@ -1,0 +1,13 @@
+---
+- name: List and power on VMs with smallest disk size
+  hosts: localhost
+  connection: local
+  gather_facts: false
+
+  vars_prompt:
+    - name: "VAULT_TOKEN"
+      prompt: "Enter your Vault token"
+      private: yes
+
+  roles:
+    - enable_vm_logging
