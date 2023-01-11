@@ -8,6 +8,8 @@ Before you begin, you will need to have the following:
 - Ansible installed on your local machine
 - A valid token for the Vault server where the vCenter server password is stored
 - vCenter server details, including the server address, username, and datacenter and cluster name
+- install jq ex: yum install jq
+- pip3 install PyVmomi requests
 
 ## Usage
 
