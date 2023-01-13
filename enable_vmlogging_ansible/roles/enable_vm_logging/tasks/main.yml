@@ -46,7 +46,8 @@
     name: "{{ item.vm }}"
     state: present
     advanced_settings:
-      - logging: TRUE
+      - key: "logging" 
+        value: "TRUE"
   loop: "{{ vms_sorted[:5] }}"
   failed_when: item.state != 'present'
 
