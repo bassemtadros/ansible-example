@@ -56,7 +56,7 @@
     username: "{{ vcenter_user }}"
     password: "{{ vcenter_password }}"
     validate_certs: no
-    vm_id: "{{ item.vm }}"
+    name: "{{ item.vm }}"
     state: poweredOn
   loop: "{{ vms_sorted[:5] }}"
   failed_when: item.state != 'poweredOn'
