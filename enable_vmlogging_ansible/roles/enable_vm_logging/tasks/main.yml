@@ -45,8 +45,8 @@
     validate_certs: no
     name: "{{ item.vm }}"
     state: present
-    logging:
-      enabled: true
+    advanced_settings:
+      - logging: TRUE
   loop: "{{ vms_sorted[:5] }}"
   failed_when: item.state != 'present'
 
